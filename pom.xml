@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+<project
+	xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+>
+    <modelVersion>4.0.0</modelVersion>
+
+	<groupId>net.technolords.tool</groupId>
+	<artifactId>shared-testcontainers</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <!--+
+            | Generic Maven properties
+            +-->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!--+
+            | Custom properties
+            +-->
+        <version.junit.jupiter>5.6.2</version.junit.jupiter>
+        <version.log4j2>2.13.1</version.log4j2>
+        <version.maven.plugin.compiler>3.8.1</version.maven.plugin.compiler>
+        <version.maven.plugin.compiler.java>11</version.maven.plugin.compiler.java>
+        <version.maven.plugin.failsafe>2.22.2</version.maven.plugin.failsafe>
+        <version.maven.plugin.surefire>2.22.2</version.maven.plugin.surefire>
+        <version.maven.plugin.jacoco>0.8.4</version.maven.plugin.jacoco>
+        <version.slf4j>1.7.30</version.slf4j>
+        <version.testcontainers>1.14.0</version.testcontainers>
+        <version.testng>7.1.0</version.testng>
+    </properties>
+
+    <scm>
+	    <connection>scm:git:https://github.com/Technolords-net/library-shared-testcontainer.git</connection>
+    </scm>
+
+    <dependencies>
+
+        <!--+
+            | Default scope dependencies (sorted by groupId and artifactId to enhance readability)
+            +-->
+
+        <dependency>
+            <!-- Required for Logger, Level and more -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${version.log4j2}</version>
+        </dependency>
+
+        <dependency>
+            <!-- Required for Appenders, Layout, Filters and more -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${version.log4j2}</version>
+        </dependency>
+
+        <dependency>
+            <!-- Required for actual Slf4j implementation -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${version.log4j2}</version>
+        </dependency>
+
+        <dependency>
+            <!-- Required for Slfj classes -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${version.slf4j}</version>
+        </dependency>
+
+        <dependency>
+            <!-- Required to use Docker containers for testing database etc -->
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mariadb</artifactId>
+            <version>${version.testcontainers}</version>
+            <exclusions>
+                <!--
+                    We use Junit5 and don't want Junit4 (transitively added), but testcontainers needs it:
+                    Caused by: java.lang.NoClassDefFoundError: org/junit/rules/TestRule
+
+                    Basically they uses this mechanism to 'load' the containers which gets executed before
+                    running the tests
+                -->
+                <!--                <exclusion>-->
+                <!--                    <groupId>junit</groupId>-->
+                <!--                    <artifactId>junit</artifactId>-->
+                <!--                </exclusion>-->
+            </exclusions>
+        </dependency>
+
+        <!--+
+            | Test scope
+            +-->
+
+        <dependency>
+            <!-- Required for Java unit testing -->
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${version.junit.jupiter}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <!-- Required for executing testing cases (alternative to Junit)  -->
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>${version.testng}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${version.maven.plugin.compiler}</version>
+                <configuration>
+                    <release>${version.maven.plugin.compiler.java}</release>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${version.maven.plugin.jacoco}</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-init</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- attached to Maven test phase -->
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${version.maven.plugin.failsafe}</version>
+                <configuration>
+                    <argLine>@{argLine} --illegal-access=permit</argLine>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <!-- Required for Junit 5 and TestNG frameworks, icm with Java 11 -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${version.maven.plugin.surefire}</version>
+                <configuration>
+                    <failIfNoTests>false</failIfNoTests>
+                    <!-- https://maven.apache.org/surefire/maven-surefire-plugin/examples/fork-options-and-parallel-execution.html -->
+                    <forkCount>1C</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <!-- https://maven.apache.org/surefire/maven-surefire-plugin/examples/shutdown.html -->
+                    <shutdown>kill</shutdown>
+                    <argLine>@{argLine} --illegal-access=permit -Xmx1024m</argLine>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <!-- Adding support for Junit 5 -->
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit-platform</artifactId>
+                        <version>${version.maven.plugin.surefire}</version>
+                    </dependency>
+                    <dependency>
+                        <!-- Adding support for TestNG -->
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>${version.maven.plugin.surefire}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
